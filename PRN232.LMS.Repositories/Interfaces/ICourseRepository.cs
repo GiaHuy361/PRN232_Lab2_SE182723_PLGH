@@ -1,0 +1,13 @@
+using PRN232.LMS.Repositories.Entities;
+
+namespace PRN232.LMS.Repositories.Interfaces;
+
+public interface ICourseRepository
+{
+    IQueryable<Course> GetQueryable();
+    Task<Course?> GetByIdAsync(int id);
+    Task AddAsync(Course entity);
+    void Update(Course entity);
+    void Delete(Course entity);
+    Task<int> SaveChangesAsync();
+}

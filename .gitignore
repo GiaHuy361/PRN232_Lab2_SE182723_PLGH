@@ -1,0 +1,21 @@
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
+
+# Rider / JetBrains
+.idea/
+
+# VS Code
+.vscode/
+
+# Docker / SQL Server data local
+*.mdf
+*.ldf
+
+# OS files
+.DS_Store
+Thumbs.db
