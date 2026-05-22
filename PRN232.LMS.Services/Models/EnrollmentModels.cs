@@ -7,6 +7,8 @@ public class EnrollmentModel
     public int CourseId { get; set; }
     public DateTime EnrollDate { get; set; }
     public string Status { get; set; } = string.Empty;
+    public StudentSummaryModel? Student { get; set; }
+    public CourseSummaryModel? Course { get; set; }
 }
 
 public class EnrollmentDetailModel

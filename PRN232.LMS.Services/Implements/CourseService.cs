@@ -27,9 +27,11 @@ public class CourseService : ICourseService
         }
 
         var expand = query.ExpandList;
-        if (expand.Contains("semester"))
+        var includeSemester = expand.Contains("semester");
+        var includeEnrollments = expand.Contains("enrollments");
+        if (includeSemester)
             queryable = queryable.Include(c => c.Semester);
-        if (expand.Contains("enrollments"))
+        if (includeEnrollments)
             queryable = queryable.Include(c => c.Enrollments).ThenInclude(e => e.Student);
 
         queryable = ApplySort(queryable, query.Sort);
@@ -41,7 +43,7 @@ public class CourseService : ICourseService
             .Take(query.Size)
             .ToListAsync();
 
-        return (courses.Select(MapToModel), total);
+        return (courses.Select(c => MapToModel(c, includeSemester, includeEnrollments)), total);
     }
 
     public async Task<CourseDetailModel?> GetByIdAsync(int id)
@@ -79,11 +81,24 @@ public class CourseService : ICourseService
         return true;
     }
 
-    private static CourseModel MapToModel(Course c) => new()
+    private static CourseModel MapToModel(Course c, bool includeSemester, bool includeEnrollments) => new()
     {
         CourseId = c.CourseId,
         CourseName = c.CourseName,
-        SemesterId = c.SemesterId
+        SemesterId = c.SemesterId,
+        Semester = includeSemester && c.Semester != null ? new SemesterSummaryModel
+        {
+            SemesterId = c.Semester.SemesterId,
+            SemesterName = c.Semester.SemesterName
+        } : null,
+        Enrollments = includeEnrollments ? c.Enrollments.Select(e => new EnrollmentSummaryModel
+        {
+            EnrollmentId = e.EnrollmentId,
+            StudentId = e.StudentId,
+            CourseId = e.CourseId,
+            EnrollDate = e.EnrollDate,
+            Status = e.Status
+        }).ToList() : null
     };
 
     private static CourseDetailModel MapToDetailModel(Course c) => new()

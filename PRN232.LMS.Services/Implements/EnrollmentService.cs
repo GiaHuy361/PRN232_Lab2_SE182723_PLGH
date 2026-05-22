@@ -30,9 +30,11 @@ public class EnrollmentService : IEnrollmentService
 
         // Expand
         var expand = query.ExpandList;
-        if (expand.Contains("student"))
+        var includeStudent = expand.Contains("student");
+        var includeCourse = expand.Contains("course");
+        if (includeStudent)
             queryable = queryable.Include(e => e.Student);
-        if (expand.Contains("course"))
+        if (includeCourse)
             queryable = queryable.Include(e => e.Course).ThenInclude(c => c.Semester);
 
         // Sort
@@ -45,7 +47,7 @@ public class EnrollmentService : IEnrollmentService
             .Take(query.Size)
             .ToListAsync();
 
-        var items = enrollments.Select(e => MapToModel(e));
+        var items = enrollments.Select(e => MapToModel(e, includeStudent, includeCourse));
         return (items, total);
     }
 
@@ -94,13 +96,24 @@ public class EnrollmentService : IEnrollmentService
 
     // ── Mapping helpers ───────────────────────────────────────────────────────
 
-    private static EnrollmentModel MapToModel(Enrollment e) => new()
+    private static EnrollmentModel MapToModel(Enrollment e, bool includeStudent, bool includeCourse) => new()
     {
         EnrollmentId = e.EnrollmentId,
         StudentId = e.StudentId,
         CourseId = e.CourseId,
         EnrollDate = e.EnrollDate,
-        Status = e.Status
+        Status = e.Status,
+        Student = includeStudent && e.Student != null ? new StudentSummaryModel
+        {
+            StudentId = e.Student.StudentId,
+            FullName = e.Student.FullName,
+            Email = e.Student.Email
+        } : null,
+        Course = includeCourse && e.Course != null ? new CourseSummaryModel
+        {
+            CourseId = e.Course.CourseId,
+            CourseName = e.Course.CourseName
+        } : null
     };
 
     private static EnrollmentDetailModel MapToDetailModel(Enrollment e) => new()

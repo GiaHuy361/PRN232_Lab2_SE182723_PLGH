@@ -136,7 +136,20 @@ public class CoursesController : ControllerBase
     {
         CourseId = m.CourseId,
         CourseName = m.CourseName,
-        SemesterId = m.SemesterId
+        SemesterId = m.SemesterId,
+        Semester = m.Semester == null ? null : new SemesterSummaryResponse
+        {
+            SemesterId = m.Semester.SemesterId,
+            SemesterName = m.Semester.SemesterName
+        },
+        Enrollments = m.Enrollments?.Select(e => new EnrollmentSummaryResponse
+        {
+            EnrollmentId = e.EnrollmentId,
+            StudentId = e.StudentId,
+            CourseId = e.CourseId,
+            EnrollDate = e.EnrollDate,
+            Status = e.Status
+        }).ToList()
     };
 
     private static CourseDetailResponse MapToDetailResponse(CourseDetailModel m) => new()
@@ -164,6 +177,8 @@ public class CoursesController : ControllerBase
         if (fields.Contains("courseid")) dict["courseId"] = r.CourseId;
         if (fields.Contains("coursename")) dict["courseName"] = r.CourseName;
         if (fields.Contains("semesterid")) dict["semesterId"] = r.SemesterId;
+        if (r.Semester != null) dict["semester"] = r.Semester;
+        if (r.Enrollments != null) dict["enrollments"] = r.Enrollments;
         return dict.Count > 0 ? dict : (object)r;
     }
 }

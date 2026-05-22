@@ -6,6 +6,7 @@ public class SemesterResponse
     public string SemesterName { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    public List<CourseSummaryResponse>? Courses { get; set; }
 }
 
 public class SemesterDetailResponse

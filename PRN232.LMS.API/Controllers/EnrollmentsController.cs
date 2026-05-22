@@ -152,7 +152,18 @@ public class EnrollmentsController : ControllerBase
         StudentId = m.StudentId,
         CourseId = m.CourseId,
         EnrollDate = m.EnrollDate,
-        Status = m.Status
+        Status = m.Status,
+        Student = m.Student == null ? null : new StudentSummaryResponse
+        {
+            StudentId = m.Student.StudentId,
+            FullName = m.Student.FullName,
+            Email = m.Student.Email
+        },
+        Course = m.Course == null ? null : new CourseSummaryResponse
+        {
+            CourseId = m.Course.CourseId,
+            CourseName = m.Course.CourseName
+        }
     };
 
     private static EnrollmentDetailResponse MapToDetailResponse(EnrollmentDetailModel m) => new()
@@ -181,6 +192,8 @@ public class EnrollmentsController : ControllerBase
         if (fields.Contains("courseid")) dict["courseId"] = r.CourseId;
         if (fields.Contains("enrolldate")) dict["enrollDate"] = r.EnrollDate;
         if (fields.Contains("status")) dict["status"] = r.Status;
+        if (r.Student != null) dict["student"] = r.Student;
+        if (r.Course != null) dict["course"] = r.Course;
         return dict.Count > 0 ? dict : (object)r;
     }
 }

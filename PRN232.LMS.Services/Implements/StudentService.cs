@@ -30,7 +30,8 @@ public class StudentService : IStudentService
         }
 
         // Expand: include enrollments
-        if (query.ExpandList.Contains("enrollments"))
+        var includeEnrollments = query.ExpandList.Contains("enrollments");
+        if (includeEnrollments)
         {
             queryable = queryable
                 .Include(s => s.Enrollments)
@@ -49,7 +50,7 @@ public class StudentService : IStudentService
             .Take(query.Size)
             .ToListAsync();
 
-        var items = students.Select(s => MapToModel(s));
+        var items = students.Select(s => MapToModel(s, includeEnrollments));
         return (items, total);
     }
 
@@ -96,12 +97,20 @@ public class StudentService : IStudentService
 
     // ── Mapping helpers ───────────────────────────────────────────────────────
 
-    private static StudentModel MapToModel(Student s) => new()
+    private static StudentModel MapToModel(Student s, bool includeEnrollments) => new()
     {
         StudentId = s.StudentId,
         FullName = s.FullName,
         Email = s.Email,
-        DateOfBirth = s.DateOfBirth
+        DateOfBirth = s.DateOfBirth,
+        Enrollments = includeEnrollments ? s.Enrollments.Select(e => new EnrollmentSummaryModel
+        {
+            EnrollmentId = e.EnrollmentId,
+            StudentId = e.StudentId,
+            CourseId = e.CourseId,
+            EnrollDate = e.EnrollDate,
+            Status = e.Status
+        }).ToList() : null
     };
 
     private static StudentDetailModel MapToDetailModel(Student s) => new()

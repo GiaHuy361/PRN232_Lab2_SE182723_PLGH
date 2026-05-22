@@ -5,6 +5,8 @@ public class CourseModel
     public int CourseId { get; set; }
     public string CourseName { get; set; } = string.Empty;
     public int SemesterId { get; set; }
+    public SemesterSummaryModel? Semester { get; set; }
+    public List<EnrollmentSummaryModel>? Enrollments { get; set; }
 }
 
 public class CourseDetailModel

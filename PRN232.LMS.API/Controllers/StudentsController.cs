@@ -151,7 +151,15 @@ public class StudentsController : ControllerBase
         StudentId = m.StudentId,
         FullName = m.FullName,
         Email = m.Email,
-        DateOfBirth = m.DateOfBirth
+        DateOfBirth = m.DateOfBirth,
+        Enrollments = m.Enrollments?.Select(e => new EnrollmentSummaryResponse
+        {
+            EnrollmentId = e.EnrollmentId,
+            StudentId = e.StudentId,
+            CourseId = e.CourseId,
+            EnrollDate = e.EnrollDate,
+            Status = e.Status
+        }).ToList()
     };
 
     private static StudentDetailResponse MapToDetailResponse(StudentDetailModel m) => new()
@@ -177,6 +185,7 @@ public class StudentsController : ControllerBase
         if (fields.Contains("fullname")) dict["fullName"] = r.FullName;
         if (fields.Contains("email")) dict["email"] = r.Email;
         if (fields.Contains("dateofbirth")) dict["dateOfBirth"] = r.DateOfBirth;
+        if (r.Enrollments != null) dict["enrollments"] = r.Enrollments;
         return dict.Count > 0 ? dict : (object)r;
     }
 }

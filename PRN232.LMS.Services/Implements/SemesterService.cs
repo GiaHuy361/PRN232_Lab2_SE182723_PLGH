@@ -26,7 +26,8 @@ public class SemesterService : ISemesterService
             queryable = queryable.Where(s => s.SemesterName.ToLower().Contains(search));
         }
 
-        if (query.ExpandList.Contains("courses"))
+        var includeCourses = query.ExpandList.Contains("courses");
+        if (includeCourses)
             queryable = queryable.Include(s => s.Courses);
 
         queryable = ApplySort(queryable, query.Sort);
@@ -38,7 +39,7 @@ public class SemesterService : ISemesterService
             .Take(query.Size)
             .ToListAsync();
 
-        return (semesters.Select(MapToModel), total);
+        return (semesters.Select(s => MapToModel(s, includeCourses)), total);
     }
 
     public async Task<SemesterDetailModel?> GetByIdAsync(int id)
@@ -82,12 +83,17 @@ public class SemesterService : ISemesterService
         return true;
     }
 
-    private static SemesterModel MapToModel(Semester s) => new()
+    private static SemesterModel MapToModel(Semester s, bool includeCourses) => new()
     {
         SemesterId = s.SemesterId,
         SemesterName = s.SemesterName,
         StartDate = s.StartDate,
-        EndDate = s.EndDate
+        EndDate = s.EndDate,
+        Courses = includeCourses ? s.Courses.Select(c => new CourseSummaryModel
+        {
+            CourseId = c.CourseId,
+            CourseName = c.CourseName
+        }).ToList() : null
     };
 
     private static SemesterDetailModel MapToDetailModel(Semester s) => new()

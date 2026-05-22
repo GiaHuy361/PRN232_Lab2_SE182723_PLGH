@@ -147,7 +147,12 @@ public class SemestersController : ControllerBase
         SemesterId = m.SemesterId,
         SemesterName = m.SemesterName,
         StartDate = m.StartDate,
-        EndDate = m.EndDate
+        EndDate = m.EndDate,
+        Courses = m.Courses?.Select(c => new CourseSummaryResponse
+        {
+            CourseId = c.CourseId,
+            CourseName = c.CourseName
+        }).ToList()
     };
 
     private static SemesterDetailResponse MapToDetailResponse(SemesterDetailModel m) => new()
@@ -170,6 +175,7 @@ public class SemestersController : ControllerBase
         if (fields.Contains("semestername")) dict["semesterName"] = r.SemesterName;
         if (fields.Contains("startdate")) dict["startDate"] = r.StartDate;
         if (fields.Contains("enddate")) dict["endDate"] = r.EndDate;
+        if (r.Courses != null) dict["courses"] = r.Courses;
         return dict.Count > 0 ? dict : (object)r;
     }
 }
