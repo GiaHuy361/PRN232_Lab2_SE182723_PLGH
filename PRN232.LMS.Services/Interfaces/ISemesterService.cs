@@ -10,4 +10,5 @@ public interface ISemesterService
     Task<int> CreateAsync(SemesterModel model);
     Task<bool> UpdateAsync(int id, SemesterModel model);
     Task<bool> DeleteAsync(int id);
+    Task<(IEnumerable<CourseModel> Items, int TotalItems)?> GetCoursesBySemesterIdAsync(int semesterId, QueryParameters query);
 }

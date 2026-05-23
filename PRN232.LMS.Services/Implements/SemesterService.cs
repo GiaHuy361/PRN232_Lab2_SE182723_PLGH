@@ -10,10 +10,12 @@ namespace PRN232.LMS.Services.Implements;
 public class SemesterService : ISemesterService
 {
     private readonly ISemesterRepository _repo;
+    private readonly ICourseRepository _courseRepo;
 
-    public SemesterService(ISemesterRepository repo)
+    public SemesterService(ISemesterRepository repo, ICourseRepository courseRepo)
     {
         _repo = repo;
+        _courseRepo = courseRepo;
     }
 
     public async Task<(IEnumerable<SemesterModel> Items, int TotalItems)> GetAllAsync(QueryParameters query)
@@ -142,5 +144,85 @@ public class SemesterService : ISemesterService
                 };
         }
         return ordered ?? q.OrderBy(s => s.SemesterId);
+    }
+
+    public async Task<(IEnumerable<CourseModel> Items, int TotalItems)?> GetCoursesBySemesterIdAsync(int semesterId, QueryParameters query)
+    {
+        var semesterExists = await _repo.GetQueryable().AnyAsync(s => s.SemesterId == semesterId);
+        if (!semesterExists) return null;
+
+        var queryable = _courseRepo.GetQueryable().Where(c => c.SemesterId == semesterId);
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var search = query.Search.Trim().ToLower();
+            queryable = queryable.Where(c => c.CourseName.ToLower().Contains(search));
+        }
+
+        var expand = query.ExpandList;
+        var includeSemester = expand.Contains("semester");
+        var includeEnrollments = expand.Contains("enrollments");
+        if (includeSemester)
+            queryable = queryable.Include(c => c.Semester);
+        if (includeEnrollments)
+            queryable = queryable.Include(c => c.Enrollments).ThenInclude(e => e.Student);
+
+        queryable = ApplyCourseSort(queryable, query.Sort);
+
+        var total = await queryable.CountAsync();
+
+        var courses = await queryable
+            .Skip((query.Page - 1) * query.Size)
+            .Take(query.Size)
+            .ToListAsync();
+
+        var items = courses.Select(c => new CourseModel
+        {
+            CourseId = c.CourseId,
+            CourseName = c.CourseName,
+            SemesterId = c.SemesterId,
+            Semester = includeSemester && c.Semester != null ? new SemesterSummaryModel
+            {
+                SemesterId = c.Semester.SemesterId,
+                SemesterName = c.Semester.SemesterName
+            } : null,
+            Enrollments = includeEnrollments ? c.Enrollments.Select(e => new EnrollmentSummaryModel
+            {
+                EnrollmentId = e.EnrollmentId,
+                StudentId = e.StudentId,
+                CourseId = e.CourseId,
+                EnrollDate = e.EnrollDate,
+                Status = e.Status
+            }).ToList() : null
+        });
+
+        return (items, total);
+    }
+
+    private static IQueryable<Course> ApplyCourseSort(IQueryable<Course> q, string? sort)
+    {
+        if (string.IsNullOrWhiteSpace(sort)) return q.OrderBy(c => c.CourseId);
+        var fields = sort.Split(',').Select(f => f.Trim()).ToList();
+        IOrderedQueryable<Course>? ordered = null;
+        foreach (var field in fields)
+        {
+            var desc = field.StartsWith("-");
+            var name = (desc ? field[1..] : field).ToLower();
+            if (ordered == null)
+                ordered = (desc, name) switch
+                {
+                    (false, "coursename") => q.OrderBy(c => c.CourseName),
+                    (true, "coursename") => q.OrderByDescending(c => c.CourseName),
+                    _ => q.OrderBy(c => c.CourseId)
+                };
+            else
+                ordered = (desc, name) switch
+                {
+                    (false, "coursename") => ordered.ThenBy(c => c.CourseName),
+                    (true, "coursename") => ordered.ThenByDescending(c => c.CourseName),
+                    _ => ordered.ThenBy(c => c.CourseId)
+                };
+        }
+        return ordered ?? q.OrderBy(c => c.CourseId);
     }
 }

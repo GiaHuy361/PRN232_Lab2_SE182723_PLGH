@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PRN232.LMS.API.Infrastructure;
 using PRN232.LMS.API.Models.Requests;
 using PRN232.LMS.API.Models.Responses;
 using PRN232.LMS.Services.Common;
@@ -13,15 +14,17 @@ namespace PRN232.LMS.API.Controllers;
 public class SubjectsController : ControllerBase
 {
     private readonly ISubjectService _service;
+    private readonly ILogger<SubjectsController> _logger;
 
-    public SubjectsController(ISubjectService service)
+    public SubjectsController(ISubjectService service, ILogger<SubjectsController> logger)
     {
         _service = service;
+        _logger = logger;
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<PagedResponse<SubjectResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters query)
     {
         try
@@ -30,7 +33,7 @@ public class SubjectsController : ControllerBase
             var responses = items.Select(MapToResponse).ToList();
 
             IEnumerable<object> finalItems = query.FieldList.Count > 0
-                ? responses.Select(r => SelectFields(r, query.FieldList)).ToList()
+                ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
                 : responses.Cast<object>().ToList();
 
             var paged = new PagedResponse<object>
@@ -48,14 +51,15 @@ public class SubjectsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in GetAll Subjects");
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<SubjectDetailResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(int id)
     {
         try
@@ -68,17 +72,22 @@ public class SubjectsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in GetById Subject {Id}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<SubjectDetailResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Create([FromBody] CreateSubjectRequest request)
     {
         try
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.SubjectCode) || string.IsNullOrWhiteSpace(request.SubjectName))
+                return BadRequest(ApiResponse<object>.ErrorResponse("Invalid request payload. SubjectCode and SubjectName are required."));
+
             var model = new SubjectModel
             {
                 SubjectCode = request.SubjectCode,
@@ -92,18 +101,23 @@ public class SubjectsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in Create Subject");
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateSubjectRequest request)
     {
         try
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.SubjectCode) || string.IsNullOrWhiteSpace(request.SubjectName))
+                return BadRequest(ApiResponse<object>.ErrorResponse("Invalid request payload. SubjectCode and SubjectName are required."));
+
             var model = new SubjectModel
             {
                 SubjectCode = request.SubjectCode,
@@ -118,14 +132,15 @@ public class SubjectsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in Update Subject {Id}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpDelete("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Delete(int id)
     {
         try
@@ -138,7 +153,8 @@ public class SubjectsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in Delete Subject {Id}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
@@ -157,14 +173,4 @@ public class SubjectsController : ControllerBase
         SubjectName = m.SubjectName,
         Credit = m.Credit
     };
-
-    private static object SelectFields(SubjectResponse r, List<string> fields)
-    {
-        var dict = new Dictionary<string, object?>();
-        if (fields.Contains("subjectid")) dict["subjectId"] = r.SubjectId;
-        if (fields.Contains("subjectcode")) dict["subjectCode"] = r.SubjectCode;
-        if (fields.Contains("subjectname")) dict["subjectName"] = r.SubjectName;
-        if (fields.Contains("credit")) dict["credit"] = r.Credit;
-        return dict.Count > 0 ? dict : (object)r;
-    }
 }

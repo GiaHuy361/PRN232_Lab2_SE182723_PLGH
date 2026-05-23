@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PRN232.LMS.API.Infrastructure;
 using PRN232.LMS.API.Models.Requests;
 using PRN232.LMS.API.Models.Responses;
 using PRN232.LMS.Services.Common;
@@ -13,15 +14,17 @@ namespace PRN232.LMS.API.Controllers;
 public class StudentsController : ControllerBase
 {
     private readonly IStudentService _service;
+    private readonly ILogger<StudentsController> _logger;
 
-    public StudentsController(IStudentService service)
+    public StudentsController(IStudentService service, ILogger<StudentsController> logger)
     {
         _service = service;
+        _logger = logger;
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<PagedResponse<StudentResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters query)
     {
         try
@@ -31,7 +34,7 @@ public class StudentsController : ControllerBase
 
             // Field selection
             IEnumerable<object> finalItems = query.FieldList.Count > 0
-                ? responses.Select(r => SelectFields(r, query.FieldList)).ToList()
+                ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
                 : responses.Cast<object>().ToList();
 
             var paged = new PagedResponse<object>
@@ -49,14 +52,71 @@ public class StudentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in GetAll Students");
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
+        }
+    }
+
+    [HttpGet("{studentId:int}/enrollments")]
+    [ProducesResponseType(typeof(ApiResponse<PagedResponse<EnrollmentResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetEnrollmentsByStudentId(int studentId, [FromQuery] QueryParameters query)
+    {
+        try
+        {
+            var result = await _service.GetEnrollmentsByStudentIdAsync(studentId, query);
+            if (result == null)
+                return NotFound(ApiResponse<object>.ErrorResponse("Student not found"));
+
+            var responses = result.Value.Items.Select(e => new EnrollmentResponse
+            {
+                EnrollmentId = e.EnrollmentId,
+                StudentId = e.StudentId,
+                CourseId = e.CourseId,
+                EnrollDate = e.EnrollDate,
+                Status = e.Status,
+                Student = e.Student == null ? null : new StudentSummaryResponse
+                {
+                    StudentId = e.Student.StudentId,
+                    FullName = e.Student.FullName,
+                    Email = e.Student.Email
+                },
+                Course = e.Course == null ? null : new CourseSummaryResponse
+                {
+                    CourseId = e.Course.CourseId,
+                    CourseName = e.Course.CourseName
+                }
+            }).ToList();
+
+            IEnumerable<object> finalItems = query.FieldList.Count > 0
+                ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
+                : responses.Cast<object>().ToList();
+
+            var paged = new PagedResponse<object>
+            {
+                Items = finalItems,
+                Pagination = new PaginationMetadata
+                {
+                    Page = query.Page,
+                    PageSize = query.Size,
+                    TotalItems = result.Value.TotalItems,
+                    TotalPages = (int)Math.Ceiling((double)result.Value.TotalItems / query.Size)
+                }
+            };
+            return Ok(ApiResponse<PagedResponse<object>>.SuccessResponse(paged));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in GetEnrollmentsByStudentId for student {StudentId}", studentId);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<StudentDetailResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(int id)
     {
         try
@@ -69,18 +129,22 @@ public class StudentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in GetById Student {Id}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<StudentResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<StudentDetailResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Create([FromBody] CreateStudentRequest request)
     {
         try
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.FullName) || string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest(ApiResponse<object>.ErrorResponse("Invalid request payload. FullName and Email are required."));
+
             var model = new StudentModel
             {
                 FullName = request.FullName,
@@ -94,18 +158,23 @@ public class StudentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in Create Student");
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateStudentRequest request)
     {
         try
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.FullName) || string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest(ApiResponse<object>.ErrorResponse("Invalid request payload. FullName and Email are required."));
+
             var model = new StudentModel
             {
                 FullName = request.FullName,
@@ -120,14 +189,15 @@ public class StudentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in Update Student {Id}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpDelete("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Delete(int id)
     {
         try
@@ -140,11 +210,10 @@ public class StudentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in Delete Student {Id}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
-
-    // ── Mapping ────────────────────────────────────────────────────────────
 
     private static StudentResponse MapToResponse(StudentModel m) => new()
     {
@@ -177,15 +246,4 @@ public class StudentsController : ControllerBase
             Status = e.Status
         }).ToList()
     };
-
-    private static object SelectFields(StudentResponse r, List<string> fields)
-    {
-        var dict = new Dictionary<string, object?>();
-        if (fields.Contains("studentid")) dict["studentId"] = r.StudentId;
-        if (fields.Contains("fullname")) dict["fullName"] = r.FullName;
-        if (fields.Contains("email")) dict["email"] = r.Email;
-        if (fields.Contains("dateofbirth")) dict["dateOfBirth"] = r.DateOfBirth;
-        if (r.Enrollments != null) dict["enrollments"] = r.Enrollments;
-        return dict.Count > 0 ? dict : (object)r;
-    }
 }

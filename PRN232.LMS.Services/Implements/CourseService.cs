@@ -10,10 +10,12 @@ namespace PRN232.LMS.Services.Implements;
 public class CourseService : ICourseService
 {
     private readonly ICourseRepository _repo;
+    private readonly IEnrollmentRepository _enrollmentRepo;
 
-    public CourseService(ICourseRepository repo)
+    public CourseService(ICourseRepository repo, IEnrollmentRepository enrollmentRepo)
     {
         _repo = repo;
+        _enrollmentRepo = enrollmentRepo;
     }
 
     public async Task<(IEnumerable<CourseModel> Items, int TotalItems)> GetAllAsync(QueryParameters query)
@@ -145,5 +147,96 @@ public class CourseService : ICourseService
                 };
         }
         return ordered ?? q.OrderBy(c => c.CourseId);
+    }
+
+    public async Task<(IEnumerable<EnrollmentModel> Items, int TotalItems)?> GetEnrollmentsByCourseIdAsync(int courseId, QueryParameters query)
+    {
+        var courseExists = await _repo.GetQueryable().AnyAsync(c => c.CourseId == courseId);
+        if (!courseExists) return null;
+
+        var queryable = _enrollmentRepo.GetQueryable().Where(e => e.CourseId == courseId);
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var search = query.Search.Trim().ToLower();
+            queryable = queryable.Where(e => e.Status.ToLower().Contains(search));
+        }
+
+        var expand = query.ExpandList;
+        var includeStudent = expand.Contains("student");
+        var includeCourse = expand.Contains("course");
+        if (includeStudent)
+            queryable = queryable.Include(e => e.Student);
+        if (includeCourse)
+            queryable = queryable.Include(e => e.Course).ThenInclude(c => c.Semester);
+
+        queryable = ApplyEnrollmentSort(queryable, query.Sort);
+
+        var total = await queryable.CountAsync();
+
+        var enrollments = await queryable
+            .Skip((query.Page - 1) * query.Size)
+            .Take(query.Size)
+            .ToListAsync();
+
+        var items = enrollments.Select(e => new EnrollmentModel
+        {
+            EnrollmentId = e.EnrollmentId,
+            StudentId = e.StudentId,
+            CourseId = e.CourseId,
+            EnrollDate = e.EnrollDate,
+            Status = e.Status,
+            Student = includeStudent && e.Student != null ? new StudentSummaryModel
+            {
+                StudentId = e.Student.StudentId,
+                FullName = e.Student.FullName,
+                Email = e.Student.Email
+            } : null,
+            Course = includeCourse && e.Course != null ? new CourseSummaryModel
+            {
+                CourseId = e.Course.CourseId,
+                CourseName = e.Course.CourseName
+            } : null
+        });
+
+        return (items, total);
+    }
+
+    private static IQueryable<Enrollment> ApplyEnrollmentSort(IQueryable<Enrollment> q, string? sort)
+    {
+        if (string.IsNullOrWhiteSpace(sort)) return q.OrderBy(e => e.EnrollmentId);
+
+        var fields = sort.Split(',').Select(f => f.Trim()).ToList();
+        IOrderedQueryable<Enrollment>? ordered = null;
+
+        foreach (var field in fields)
+        {
+            var desc = field.StartsWith("-");
+            var name = (desc ? field[1..] : field).ToLower();
+            if (ordered == null)
+            {
+                ordered = (desc, name) switch
+                {
+                    (false, "enrolldate") => q.OrderBy(e => e.EnrollDate),
+                    (true, "enrolldate") => q.OrderByDescending(e => e.EnrollDate),
+                    (false, "status") => q.OrderBy(e => e.Status),
+                    (true, "status") => q.OrderByDescending(e => e.Status),
+                    _ => q.OrderBy(e => e.EnrollmentId)
+                };
+            }
+            else
+            {
+                ordered = (desc, name) switch
+                {
+                    (false, "enrolldate") => ordered.ThenBy(e => e.EnrollDate),
+                    (true, "enrolldate") => ordered.ThenByDescending(e => e.EnrollDate),
+                    (false, "status") => ordered.ThenBy(e => e.Status),
+                    (true, "status") => ordered.ThenByDescending(e => e.Status),
+                    _ => ordered.ThenBy(e => e.EnrollmentId)
+                };
+            }
+        }
+
+        return ordered ?? q.OrderBy(e => e.EnrollmentId);
     }
 }

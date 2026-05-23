@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PRN232.LMS.API.Infrastructure;
 using PRN232.LMS.API.Models.Requests;
 using PRN232.LMS.API.Models.Responses;
 using PRN232.LMS.Services.Common;
@@ -13,15 +14,17 @@ namespace PRN232.LMS.API.Controllers;
 public class EnrollmentsController : ControllerBase
 {
     private readonly IEnrollmentService _service;
+    private readonly ILogger<EnrollmentsController> _logger;
 
-    public EnrollmentsController(IEnrollmentService service)
+    public EnrollmentsController(IEnrollmentService service, ILogger<EnrollmentsController> logger)
     {
         _service = service;
+        _logger = logger;
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<PagedResponse<object>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<PagedResponse<EnrollmentResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters query)
     {
         try
@@ -30,7 +33,7 @@ public class EnrollmentsController : ControllerBase
             var responses = items.Select(MapToResponse).ToList();
 
             IEnumerable<object> finalItems = query.FieldList.Count > 0
-                ? responses.Select(r => SelectFields(r, query.FieldList)).ToList()
+                ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
                 : responses.Cast<object>().ToList();
 
             var paged = new PagedResponse<object>
@@ -48,14 +51,15 @@ public class EnrollmentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in GetAll Enrollments");
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<EnrollmentDetailResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(int id)
     {
         try
@@ -68,17 +72,22 @@ public class EnrollmentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in GetById Enrollment {Id}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<EnrollmentDetailResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Create([FromBody] CreateEnrollmentRequest request)
     {
         try
         {
+            if (request == null || request.StudentId <= 0 || request.CourseId <= 0)
+                return BadRequest(ApiResponse<object>.ErrorResponse("Invalid request payload. StudentId and CourseId are required."));
+
             var model = new EnrollmentModel
             {
                 StudentId = request.StudentId,
@@ -93,18 +102,23 @@ public class EnrollmentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in Create Enrollment");
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateEnrollmentRequest request)
     {
         try
         {
+            if (request == null || request.StudentId <= 0 || request.CourseId <= 0)
+                return BadRequest(ApiResponse<object>.ErrorResponse("Invalid request payload. StudentId and CourseId are required."));
+
             var model = new EnrollmentModel
             {
                 StudentId = request.StudentId,
@@ -120,14 +134,15 @@ public class EnrollmentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in Update Enrollment {Id}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
 
     [HttpDelete("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Delete(int id)
     {
         try
@@ -140,11 +155,10 @@ public class EnrollmentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred.", ex.Message));
+            _logger.LogError(ex, "Unexpected error in Delete Enrollment {Id}", id);
+            return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
         }
     }
-
-    // ── Mapping ────────────────────────────────────────────────────────────
 
     private static EnrollmentResponse MapToResponse(EnrollmentModel m) => new()
     {
@@ -183,17 +197,4 @@ public class EnrollmentsController : ControllerBase
             CourseName = m.Course.CourseName
         }
     };
-
-    private static object SelectFields(EnrollmentResponse r, List<string> fields)
-    {
-        var dict = new Dictionary<string, object?>();
-        if (fields.Contains("enrollmentid")) dict["enrollmentId"] = r.EnrollmentId;
-        if (fields.Contains("studentid")) dict["studentId"] = r.StudentId;
-        if (fields.Contains("courseid")) dict["courseId"] = r.CourseId;
-        if (fields.Contains("enrolldate")) dict["enrollDate"] = r.EnrollDate;
-        if (fields.Contains("status")) dict["status"] = r.Status;
-        if (r.Student != null) dict["student"] = r.Student;
-        if (r.Course != null) dict["course"] = r.Course;
-        return dict.Count > 0 ? dict : (object)r;
-    }
 }

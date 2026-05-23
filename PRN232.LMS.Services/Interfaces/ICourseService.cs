@@ -10,4 +10,5 @@ public interface ICourseService
     Task<int> CreateAsync(CourseModel model);
     Task<bool> UpdateAsync(int id, CourseModel model);
     Task<bool> DeleteAsync(int id);
+    Task<(IEnumerable<EnrollmentModel> Items, int TotalItems)?> GetEnrollmentsByCourseIdAsync(int courseId, QueryParameters query);
 }
