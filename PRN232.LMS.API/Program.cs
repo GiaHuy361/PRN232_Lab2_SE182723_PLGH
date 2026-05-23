@@ -19,7 +19,7 @@ builder.Services.AddDbContext<LmsDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "PRN232 SE1815 SE182723 PLGH LMS API", Version = "v1" });
+    c.SwaggerDoc("v1", new() { Title = "PRN232.LMS.API", Version = "1.0" });
     c.OperationFilter<HideJsonIgnoreParameterFilter>(); // hides ExpandList / FieldList
     c.OperationFilter<QueryParameterDescriptionFilter>(); // lowercases and adds rich descriptions to query parameters
 });
@@ -44,7 +44,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "PRN232 SE1815 SE182723 PLGH LMS API v1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "PRN232.LMS.API v1");
     c.RoutePrefix = "swagger";
 });
 
