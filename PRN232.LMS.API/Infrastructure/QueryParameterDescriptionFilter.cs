@@ -9,6 +9,18 @@ public class QueryParameterDescriptionFilter : IOperationFilter
     {
         if (operation.Parameters == null) return;
 
+        var controllerName = context.ApiDescription.ActionDescriptor.RouteValues["controller"]?.ToLower() ?? "";
+
+        // 1. Hide 'expand' parameter from GET /api/subjects
+        var toRemove = operation.Parameters
+            .Where(p => p.In == ParameterLocation.Query && p.Name.ToLower() == "expand" && controllerName == "subjects")
+            .ToList();
+        foreach (var p in toRemove)
+        {
+            operation.Parameters.Remove(p);
+        }
+
+        // 2. Adjust parameter names and descriptions
         foreach (var parameter in operation.Parameters)
         {
             if (parameter.In == ParameterLocation.Query)
@@ -19,17 +31,33 @@ public class QueryParameterDescriptionFilter : IOperationFilter
                     // Convert query parameter name to lowercase in Swagger
                     parameter.Name = nameLower;
 
-                    // Apply unified query parameter descriptions
+                    // Apply simplified query parameter descriptions
                     parameter.Description = nameLower switch
                     {
-                        "search" => "Keyword or condition used to filter items.",
-                        "sort" => "Comma-separated fields. Prefix '-' means descending, e.g. -enrollDate.",
-                        "page" => "Page number starting from 1 (default is 1).",
-                        "size" => "Number of items per page (default is 10, max is 100).",
-                        "fields" => "Comma-separated scalar fields to return.",
+                        "search" => "Search by keyword.",
+                        "sort" => "Sort by a field.",
+                        "page" => "Page number.",
+                        "size" => "Items per page.",
+                        "fields" => "Choose fields to show.",
                         "expand" => GetExpandDescription(context),
                         _ => parameter.Description
                     };
+                }
+            }
+            else if (parameter.In == ParameterLocation.Path)
+            {
+                var nameLower = parameter.Name.ToLower();
+                if (nameLower == "courseid")
+                {
+                    parameter.Description = "Course ID.";
+                }
+                else if (nameLower == "semesterid")
+                {
+                    parameter.Description = "Semester ID.";
+                }
+                else if (nameLower == "studentid")
+                {
+                    parameter.Description = "Student ID.";
                 }
             }
         }
@@ -43,23 +71,25 @@ public class QueryParameterDescriptionFilter : IOperationFilter
         if (controllerName == "semesters")
         {
             if (path.Contains("courses"))
-                return "Comma-separated related resources to include. Supported: semester, enrollments";
-            return "Comma-separated related resources to include. Supported: courses";
+                return "Show semester or enrollments.";
+            return "Show courses.";
         }
         if (controllerName == "students")
         {
-            return "Comma-separated related resources to include. Supported: enrollments";
+            if (path.Contains("enrollments"))
+                return "Show student or course.";
+            return "Show enrollments.";
         }
         if (controllerName == "courses")
         {
             if (path.Contains("enrollments"))
-                return "Comma-separated related resources to include. Supported: student, course";
-            return "Comma-separated related resources to include. Supported: semester, enrollments";
+                return "Show student or course.";
+            return "Show semester or enrollments.";
         }
         if (controllerName == "enrollments")
         {
-            return "Comma-separated related resources to include. Supported: student, course";
+            return "Show student or course.";
         }
-        return "Comma-separated related resources to include.";
+        return "Show related data.";
     }
 }
