@@ -1,31 +1,21 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace PRN232.LMS.Services.Common;
 
 public class QueryParameters
 {
-    private int _page = 1;
-    private int _size = 10;
+    [Range(1, int.MaxValue, ErrorMessage = "Page must be greater than or equal to 1.")]
+    public int Page { get; set; } = 1;
+
+    [Range(1, 100, ErrorMessage = "Size must be between 1 and 100.")]
+    public int Size { get; set; } = 10;
 
     public string? Search { get; set; }
     public string? Sort { get; set; }
-
-    public int Page
-    {
-        get => _page;
-        set => _page = value <= 0 ? 1 : value;
-    }
-
-    public int Size
-    {
-        get => _size;
-        set => _size = value <= 0 ? 10 : (value > 100 ? 100 : value);
-    }
-
     public string? Fields { get; set; }
     public string? Expand { get; set; }
 
-    // Internal helpers — excluded from JSON serialization and Swagger
     [JsonIgnore]
     public List<string> ExpandList =>
         string.IsNullOrWhiteSpace(Expand)

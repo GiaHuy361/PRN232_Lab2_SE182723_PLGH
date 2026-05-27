@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace PRN232.LMS.Repositories.Entities;
@@ -12,6 +12,8 @@ public partial class Student
     public string Email { get; set; } = null!;
 
     public DateTime DateOfBirth { get; set; }
+
+    public string? Phone { get; set; }
 
     public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 }

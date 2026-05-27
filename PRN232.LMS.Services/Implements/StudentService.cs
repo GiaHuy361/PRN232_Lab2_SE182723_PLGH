@@ -69,7 +69,8 @@ public class StudentService : IStudentService
         {
             FullName = model.FullName,
             Email = model.Email,
-            DateOfBirth = model.DateOfBirth
+            DateOfBirth = model.DateOfBirth,
+            Phone = model.Phone
         };
         await _repo.AddAsync(entity);
         await _repo.SaveChangesAsync();
@@ -83,6 +84,7 @@ public class StudentService : IStudentService
         entity.FullName = model.FullName;
         entity.Email = model.Email;
         entity.DateOfBirth = model.DateOfBirth;
+        entity.Phone = model.Phone;
         _repo.Update(entity);
         await _repo.SaveChangesAsync();
         return true;
@@ -105,6 +107,7 @@ public class StudentService : IStudentService
         FullName = s.FullName,
         Email = s.Email,
         DateOfBirth = s.DateOfBirth,
+        Phone = s.Phone,
         Enrollments = includeEnrollments ? s.Enrollments.Select(e => new EnrollmentSummaryModel
         {
             EnrollmentId = e.EnrollmentId,
@@ -121,6 +124,7 @@ public class StudentService : IStudentService
         FullName = s.FullName,
         Email = s.Email,
         DateOfBirth = s.DateOfBirth,
+        Phone = s.Phone,
         Enrollments = s.Enrollments.Select(e => new StudentEnrollmentModel
         {
             EnrollmentId = e.EnrollmentId,

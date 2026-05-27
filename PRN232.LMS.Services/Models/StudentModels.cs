@@ -6,6 +6,7 @@ public class StudentModel
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public DateTime DateOfBirth { get; set; }
+    public string? Phone { get; set; }
     public List<EnrollmentSummaryModel>? Enrollments { get; set; }
 }
 
@@ -15,6 +16,7 @@ public class StudentDetailModel
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public DateTime DateOfBirth { get; set; }
+    public string? Phone { get; set; }
     public List<StudentEnrollmentModel> Enrollments { get; set; } = new();
 }
 
@@ -32,6 +34,7 @@ public class StudentSummaryModel
     public int StudentId { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? Phone { get; set; }
 }
 
 public class EnrollmentSummaryModel

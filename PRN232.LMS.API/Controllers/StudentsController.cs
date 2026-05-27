@@ -57,7 +57,7 @@ public class StudentsController : ControllerBase
         }
     }
 
-    [HttpGet("{studentId:int}/enrollments")]
+    [HttpGet("{studentId:int:min(1)}/enrollments")]
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<EnrollmentResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
@@ -113,7 +113,7 @@ public class StudentsController : ControllerBase
         }
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet("{id:int:min(1)}")]
     [ProducesResponseType(typeof(ApiResponse<StudentDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
@@ -149,7 +149,8 @@ public class StudentsController : ControllerBase
             {
                 FullName = request.FullName,
                 Email = request.Email,
-                DateOfBirth = request.DateOfBirth
+                DateOfBirth = request.DateOfBirth,
+                Phone = request.Phone
             };
             var id = await _service.CreateAsync(model);
             var created = await _service.GetByIdAsync(id);
@@ -163,7 +164,7 @@ public class StudentsController : ControllerBase
         }
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:int:min(1)}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -179,7 +180,8 @@ public class StudentsController : ControllerBase
             {
                 FullName = request.FullName,
                 Email = request.Email,
-                DateOfBirth = request.DateOfBirth
+                DateOfBirth = request.DateOfBirth,
+                Phone = request.Phone
             };
             var result = await _service.UpdateAsync(id, model);
             if (!result)
@@ -194,7 +196,7 @@ public class StudentsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id:int:min(1)}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
@@ -221,6 +223,7 @@ public class StudentsController : ControllerBase
         FullName = m.FullName,
         Email = m.Email,
         DateOfBirth = m.DateOfBirth,
+        Phone = m.Phone,
         Enrollments = m.Enrollments?.Select(e => new EnrollmentSummaryResponse
         {
             EnrollmentId = e.EnrollmentId,
@@ -237,6 +240,7 @@ public class StudentsController : ControllerBase
         FullName = m.FullName,
         Email = m.Email,
         DateOfBirth = m.DateOfBirth,
+        Phone = m.Phone,
         Enrollments = m.Enrollments.Select(e => new StudentEnrollmentResponse
         {
             EnrollmentId = e.EnrollmentId,

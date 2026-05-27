@@ -53,7 +53,8 @@ CREATE TABLE Student (
     StudentId   INT PRIMARY KEY IDENTITY(1,1),
     FullName    NVARCHAR(100) NOT NULL,
     Email       VARCHAR(100) NOT NULL,
-    DateOfBirth DATETIME NOT NULL
+    DateOfBirth DATETIME NOT NULL,
+    Phone       VARCHAR(20) NULL
 );
 
 CREATE TABLE Enrollment (
