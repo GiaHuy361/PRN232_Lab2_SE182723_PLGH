@@ -10,7 +10,7 @@ namespace PRN232.LMS.API.Controllers;
 
 [ApiController]
 [Route("api/subjects")]
-[Produces("application/json")]
+[Produces("application/json", "application/xml")]
 public class SubjectsController : ControllerBase
 {
     private readonly ISubjectService _service;
@@ -60,7 +60,7 @@ public class SubjectsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<SubjectDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById([FromRoute] int id)
     {
         try
         {
@@ -111,7 +111,7 @@ public class SubjectsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateSubjectRequest request)
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateSubjectRequest request)
     {
         try
         {
@@ -141,7 +141,7 @@ public class SubjectsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {

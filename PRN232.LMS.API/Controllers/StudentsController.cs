@@ -10,7 +10,7 @@ namespace PRN232.LMS.API.Controllers;
 
 [ApiController]
 [Route("api/students")]
-[Produces("application/json")]
+[Produces("application/json", "application/xml")]
 public class StudentsController : ControllerBase
 {
     private readonly IStudentService _service;
@@ -61,7 +61,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<EnrollmentResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetEnrollmentsByStudentId(int studentId, [FromQuery] QueryParameters query)
+    public async Task<IActionResult> GetEnrollmentsByStudentId([FromRoute] int studentId, [FromQuery] QueryParameters query)
     {
         try
         {
@@ -117,10 +117,15 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<StudentDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById([FromRoute] int id, [FromHeader(Name = "X-Request-Id")] string? requestId)
     {
         try
         {
+            if (!string.IsNullOrWhiteSpace(requestId))
+            {
+                Response.Headers["X-Request-Id"] = requestId;
+            }
+
             var model = await _service.GetByIdAsync(id);
             if (model == null)
                 return NotFound(ApiResponse<object>.ErrorResponse("Student not found"));
@@ -169,7 +174,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateStudentRequest request)
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStudentRequest request)
     {
         try
         {
@@ -200,7 +205,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {

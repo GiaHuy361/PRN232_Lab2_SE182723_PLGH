@@ -10,7 +10,7 @@ namespace PRN232.LMS.API.Controllers;
 
 [ApiController]
 [Route("api/enrollments")]
-[Produces("application/json")]
+[Produces("application/json", "application/xml")]
 public class EnrollmentsController : ControllerBase
 {
     private readonly IEnrollmentService _service;
@@ -60,7 +60,7 @@ public class EnrollmentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<EnrollmentDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById([FromRoute] int id)
     {
         try
         {
@@ -112,7 +112,7 @@ public class EnrollmentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateEnrollmentRequest request)
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateEnrollmentRequest request)
     {
         try
         {
@@ -143,7 +143,7 @@ public class EnrollmentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {

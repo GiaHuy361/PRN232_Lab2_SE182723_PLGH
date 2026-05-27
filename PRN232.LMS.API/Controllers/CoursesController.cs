@@ -10,7 +10,7 @@ namespace PRN232.LMS.API.Controllers;
 
 [ApiController]
 [Route("api/courses")]
-[Produces("application/json")]
+[Produces("application/json", "application/xml")]
 public class CoursesController : ControllerBase
 {
     private readonly ICourseService _service;
@@ -60,7 +60,7 @@ public class CoursesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<EnrollmentResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetEnrollmentsByCourseId(int courseId, [FromQuery] QueryParameters query)
+    public async Task<IActionResult> GetEnrollmentsByCourseId([FromRoute] int courseId, [FromQuery] QueryParameters query)
     {
         try
         {
@@ -116,7 +116,7 @@ public class CoursesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<CourseDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById([FromRoute] int id)
     {
         try
         {
@@ -162,7 +162,7 @@ public class CoursesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateCourseRequest request)
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateCourseRequest request)
     {
         try
         {
@@ -187,7 +187,7 @@ public class CoursesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         try
         {
