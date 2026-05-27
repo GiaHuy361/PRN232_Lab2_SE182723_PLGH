@@ -178,10 +178,11 @@ END
 GO
 
 -- ============================================================
--- SEED: Users (Admin)
+-- SEED: Users (Admin & Student)
 -- ============================================================
 INSERT INTO [Users] (Username, PasswordHash, Role) VALUES
-('admin', '$2a$11$KOrKPxHkCwrGVF/U4RqBeeoBAahmIFVFvVGa1RpSx1szrK2iX2dLi', 'Admin');
+('admin', '$2a$11$KOrKPxHkCwrGVF/U4RqBeeoBAahmIFVFvVGa1RpSx1szrK2iX2dLi', 'Admin'),
+('student', '$2a$11$E/rdbALLsHRU0QFb569DyeQm6UPeezJuRgq7mkRtf9uclLGufiQSm', 'Student');
 GO
 
 PRINT 'PRN232_LMS database seeded successfully.';

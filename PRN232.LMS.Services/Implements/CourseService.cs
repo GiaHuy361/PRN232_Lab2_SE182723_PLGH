@@ -11,11 +11,13 @@ public class CourseService : ICourseService
 {
     private readonly ICourseRepository _repo;
     private readonly IEnrollmentRepository _enrollmentRepo;
+    private readonly IStudentRepository _studentRepo;
 
-    public CourseService(ICourseRepository repo, IEnrollmentRepository enrollmentRepo)
+    public CourseService(ICourseRepository repo, IEnrollmentRepository enrollmentRepo, IStudentRepository studentRepo)
     {
         _repo = repo;
         _enrollmentRepo = enrollmentRepo;
+        _studentRepo = studentRepo;
     }
 
     public async Task<(IEnumerable<CourseModel> Items, int TotalItems)> GetAllAsync(QueryParameters query)
@@ -238,5 +240,103 @@ public class CourseService : ICourseService
         }
 
         return ordered ?? q.OrderBy(e => e.EnrollmentId);
+    }
+
+    public async Task<(IEnumerable<StudentModel> Items, int TotalItems)?> GetStudentsByCourseIdAsync(int courseId, QueryParameters query)
+    {
+        var courseExists = await _repo.GetQueryable().AnyAsync(c => c.CourseId == courseId);
+        if (!courseExists) return null;
+
+        // Query starts off the Student repository, filtered by having an enrollment in the requested courseId.
+        // This guarantees that all Student records are 100% distinct naturally BEFORE count and paging.
+        var queryable = _studentRepo.GetQueryable()
+            .Where(s => s.Enrollments.Any(e => e.CourseId == courseId));
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var search = query.Search.Trim().ToLower();
+            queryable = queryable.Where(s => s.FullName.ToLower().Contains(search) || s.Email.ToLower().Contains(search));
+        }
+
+        var expand = query.ExpandList;
+        var includeEnrollments = expand.Contains("enrollments");
+        if (includeEnrollments)
+        {
+            queryable = queryable.Include(s => s.Enrollments);
+        }
+
+        queryable = ApplyStudentSort(queryable, query.Sort);
+
+        var total = await queryable.CountAsync();
+
+        var students = await queryable
+            .Skip((query.Page - 1) * query.Size)
+            .Take(query.Size)
+            .ToListAsync();
+
+        var items = students.Select(s => new StudentModel
+        {
+            StudentId = s.StudentId,
+            FullName = s.FullName,
+            Email = s.Email,
+            DateOfBirth = s.DateOfBirth,
+            Phone = s.Phone,
+            Enrollments = includeEnrollments
+                ? s.Enrollments
+                    .Where(e => e.CourseId == courseId) // Strictly filter to only include enrollment for this course
+                    .Select(e => new EnrollmentSummaryModel
+                    {
+                        EnrollmentId = e.EnrollmentId,
+                        StudentId = e.StudentId,
+                        CourseId = e.CourseId,
+                        EnrollDate = e.EnrollDate,
+                        Status = e.Status
+                    }).ToList()
+                : null
+        });
+
+        return (items, total);
+    }
+
+    private static IQueryable<Student> ApplyStudentSort(IQueryable<Student> q, string? sort)
+    {
+        if (string.IsNullOrWhiteSpace(sort)) return q.OrderBy(s => s.StudentId);
+
+        var fields = sort.Split(',').Select(f => f.Trim()).ToList();
+        IOrderedQueryable<Student>? ordered = null;
+
+        foreach (var field in fields)
+        {
+            var desc = field.StartsWith("-");
+            var name = (desc ? field[1..] : field).ToLower();
+            if (ordered == null)
+            {
+                ordered = (desc, name) switch
+                {
+                    (false, "fullname") => q.OrderBy(s => s.FullName),
+                    (true, "fullname") => q.OrderByDescending(s => s.FullName),
+                    (false, "email") => q.OrderBy(s => s.Email),
+                    (true, "email") => q.OrderByDescending(s => s.Email),
+                    (false, "dateofbirth") => q.OrderBy(s => s.DateOfBirth),
+                    (true, "dateofbirth") => q.OrderByDescending(s => s.DateOfBirth),
+                    _ => q.OrderBy(s => s.StudentId)
+                };
+            }
+            else
+            {
+                ordered = (desc, name) switch
+                {
+                    (false, "fullname") => ordered.ThenBy(s => s.FullName),
+                    (true, "fullname") => ordered.ThenByDescending(s => s.FullName),
+                    (false, "email") => ordered.ThenBy(s => s.Email),
+                    (true, "email") => ordered.ThenByDescending(s => s.Email),
+                    (false, "dateofbirth") => ordered.ThenBy(s => s.DateOfBirth),
+                    (true, "dateofbirth") => ordered.ThenByDescending(s => s.DateOfBirth),
+                    _ => ordered.ThenBy(s => s.StudentId)
+                };
+            }
+        }
+
+        return ordered ?? q.OrderBy(s => s.StudentId);
     }
 }
