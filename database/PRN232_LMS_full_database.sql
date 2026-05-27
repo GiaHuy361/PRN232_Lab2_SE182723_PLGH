@@ -16,6 +16,8 @@ GO
 -- ============================================================
 -- DROP TABLES (if re-running)
 -- ============================================================
+IF OBJECT_ID('dbo.RefreshToken', 'U') IS NOT NULL DROP TABLE dbo.RefreshToken;
+IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL DROP TABLE dbo.Users;
 IF OBJECT_ID('dbo.Enrollment', 'U') IS NOT NULL DROP TABLE dbo.Enrollment;
 IF OBJECT_ID('dbo.Course', 'U') IS NOT NULL DROP TABLE dbo.Course;
 IF OBJECT_ID('dbo.Semester', 'U') IS NOT NULL DROP TABLE dbo.Semester;
@@ -62,6 +64,25 @@ CREATE TABLE Enrollment (
     Status       VARCHAR(20) NOT NULL,
     CONSTRAINT FK_Enrollment_Student FOREIGN KEY (StudentId) REFERENCES Student(StudentId),
     CONSTRAINT FK_Enrollment_Course  FOREIGN KEY (CourseId)  REFERENCES Course(CourseId)
+);
+
+CREATE TABLE [Users] (
+    UserId       INT PRIMARY KEY IDENTITY(1,1),
+    Username     VARCHAR(50) NOT NULL UNIQUE,
+    PasswordHash VARCHAR(255) NOT NULL,
+    Role         VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE RefreshToken (
+    RefreshTokenId INT PRIMARY KEY IDENTITY(1,1),
+    UserId         INT NOT NULL,
+    Token          VARCHAR(500) NOT NULL,
+    ExpiresAt      DATETIME2 NOT NULL,
+    CreatedAt      DATETIME2 NOT NULL,
+    RevokedAt      DATETIME2 NULL,
+    IsUsed         BIT NOT NULL,
+    IsRevoked      BIT NOT NULL,
+    CONSTRAINT FK_RefreshToken_Users FOREIGN KEY (UserId) REFERENCES [Users](UserId)
 );
 GO
 
@@ -153,6 +174,13 @@ BEGIN
     END
     SET @sid = @sid + 1;
 END
+GO
+
+-- ============================================================
+-- SEED: Users (Admin)
+-- ============================================================
+INSERT INTO [Users] (Username, PasswordHash, Role) VALUES
+('admin', '$2a$11$KOrKPxHkCwrGVF/U4RqBeeoBAahmIFVFvVGa1RpSx1szrK2iX2dLi', 'Admin');
 GO
 
 PRINT 'PRN232_LMS database seeded successfully.';
