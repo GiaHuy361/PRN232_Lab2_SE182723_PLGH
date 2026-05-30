@@ -6,6 +6,7 @@ public interface IStudentRepository
 {
     IQueryable<Student> GetQueryable();
     Task<Student?> GetByIdAsync(int id);
+    Task<bool> IsStudentCodeTakenAsync(string studentCode, int? excludeStudentId = null);
     Task AddAsync(Student entity);
     void Update(Student entity);
     void Delete(Student entity);

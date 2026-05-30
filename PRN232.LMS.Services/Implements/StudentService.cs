@@ -22,13 +22,14 @@ public class StudentService : IStudentService
     {
         var queryable = _repo.GetQueryable();
 
-        // Search
+        // Search: fullName, email, or studentCode
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var search = query.Search.Trim().ToLower();
             queryable = queryable.Where(s =>
                 s.FullName.ToLower().Contains(search) ||
-                s.Email.ToLower().Contains(search));
+                s.Email.ToLower().Contains(search) ||
+                s.StudentCode.ToLower().Contains(search));
         }
 
         // Expand: include enrollments
@@ -63,31 +64,52 @@ public class StudentService : IStudentService
         return MapToDetailModel(entity);
     }
 
-    public async Task<int> CreateAsync(StudentModel model)
+    public async Task<(int Id, bool IsDuplicateCode)> CreateAsync(StudentModel model)
     {
+        // Normalize StudentCode to uppercase before save
+        var normalizedCode = model.StudentCode.Trim().ToUpperInvariant();
+        var normalizedEmail = model.Email.Trim().ToLowerInvariant();
+
+        // Check for duplicate StudentCode
+        var isDuplicate = await _repo.IsStudentCodeTakenAsync(normalizedCode);
+        if (isDuplicate)
+            return (0, true);
+
         var entity = new Student
         {
+            StudentCode = normalizedCode,
             FullName = model.FullName,
-            Email = model.Email,
+            Email = normalizedEmail,
             DateOfBirth = model.DateOfBirth,
             Phone = model.Phone
         };
         await _repo.AddAsync(entity);
         await _repo.SaveChangesAsync();
-        return entity.StudentId;
+        return (entity.StudentId, false);
     }
 
-    public async Task<bool> UpdateAsync(int id, StudentModel model)
+    public async Task<(bool Found, bool IsDuplicateCode)> UpdateAsync(int id, StudentModel model)
     {
         var entity = await _repo.GetByIdAsync(id);
-        if (entity == null) return false;
+        if (entity == null) return (false, false);
+
+        // Normalize StudentCode to uppercase before save
+        var normalizedCode = model.StudentCode.Trim().ToUpperInvariant();
+        var normalizedEmail = model.Email.Trim().ToLowerInvariant();
+
+        // Check duplicate: exclude the current student (updating their own code is always valid)
+        var isDuplicate = await _repo.IsStudentCodeTakenAsync(normalizedCode, excludeStudentId: id);
+        if (isDuplicate)
+            return (true, true);
+
+        entity.StudentCode = normalizedCode;
         entity.FullName = model.FullName;
-        entity.Email = model.Email;
+        entity.Email = normalizedEmail;
         entity.DateOfBirth = model.DateOfBirth;
         entity.Phone = model.Phone;
         _repo.Update(entity);
         await _repo.SaveChangesAsync();
-        return true;
+        return (true, false);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -104,6 +126,7 @@ public class StudentService : IStudentService
     private static StudentModel MapToModel(Student s, bool includeEnrollments) => new()
     {
         StudentId = s.StudentId,
+        StudentCode = s.StudentCode,
         FullName = s.FullName,
         Email = s.Email,
         DateOfBirth = s.DateOfBirth,
@@ -121,6 +144,7 @@ public class StudentService : IStudentService
     private static StudentDetailModel MapToDetailModel(Student s) => new()
     {
         StudentId = s.StudentId,
+        StudentCode = s.StudentCode,
         FullName = s.FullName,
         Email = s.Email,
         DateOfBirth = s.DateOfBirth,
@@ -152,12 +176,14 @@ public class StudentService : IStudentService
             {
                 ordered = (desc, name) switch
                 {
+                    (false, "studentcode") => q.OrderBy(s => s.StudentCode),
+                    (true,  "studentcode") => q.OrderByDescending(s => s.StudentCode),
                     (false, "fullname") => q.OrderBy(s => s.FullName),
-                    (true, "fullname") => q.OrderByDescending(s => s.FullName),
+                    (true,  "fullname") => q.OrderByDescending(s => s.FullName),
                     (false, "email") => q.OrderBy(s => s.Email),
-                    (true, "email") => q.OrderByDescending(s => s.Email),
+                    (true,  "email") => q.OrderByDescending(s => s.Email),
                     (false, "dateofbirth") => q.OrderBy(s => s.DateOfBirth),
-                    (true, "dateofbirth") => q.OrderByDescending(s => s.DateOfBirth),
+                    (true,  "dateofbirth") => q.OrderByDescending(s => s.DateOfBirth),
                     _ => q.OrderBy(s => s.StudentId)
                 };
             }
@@ -165,12 +191,14 @@ public class StudentService : IStudentService
             {
                 ordered = (desc, name) switch
                 {
+                    (false, "studentcode") => ordered.ThenBy(s => s.StudentCode),
+                    (true,  "studentcode") => ordered.ThenByDescending(s => s.StudentCode),
                     (false, "fullname") => ordered.ThenBy(s => s.FullName),
-                    (true, "fullname") => ordered.ThenByDescending(s => s.FullName),
+                    (true,  "fullname") => ordered.ThenByDescending(s => s.FullName),
                     (false, "email") => ordered.ThenBy(s => s.Email),
-                    (true, "email") => ordered.ThenByDescending(s => s.Email),
+                    (true,  "email") => ordered.ThenByDescending(s => s.Email),
                     (false, "dateofbirth") => ordered.ThenBy(s => s.DateOfBirth),
-                    (true, "dateofbirth") => ordered.ThenByDescending(s => s.DateOfBirth),
+                    (true,  "dateofbirth") => ordered.ThenByDescending(s => s.DateOfBirth),
                     _ => ordered.ThenBy(s => s.StudentId)
                 };
             }
@@ -219,8 +247,10 @@ public class StudentService : IStudentService
             Student = includeStudent && e.Student != null ? new StudentSummaryModel
             {
                 StudentId = e.Student.StudentId,
+                StudentCode = e.Student.StudentCode,
                 FullName = e.Student.FullName,
-                Email = e.Student.Email
+                Email = e.Student.Email,
+                Phone = e.Student.Phone
             } : null,
             Course = includeCourse && e.Course != null ? new CourseSummaryModel
             {
@@ -248,9 +278,9 @@ public class StudentService : IStudentService
                 ordered = (desc, name) switch
                 {
                     (false, "enrolldate") => q.OrderBy(e => e.EnrollDate),
-                    (true, "enrolldate") => q.OrderByDescending(e => e.EnrollDate),
+                    (true,  "enrolldate") => q.OrderByDescending(e => e.EnrollDate),
                     (false, "status") => q.OrderBy(e => e.Status),
-                    (true, "status") => q.OrderByDescending(e => e.Status),
+                    (true,  "status") => q.OrderByDescending(e => e.Status),
                     _ => q.OrderBy(e => e.EnrollmentId)
                 };
             }
@@ -259,9 +289,9 @@ public class StudentService : IStudentService
                 ordered = (desc, name) switch
                 {
                     (false, "enrolldate") => ordered.ThenBy(e => e.EnrollDate),
-                    (true, "enrolldate") => ordered.ThenByDescending(e => e.EnrollDate),
+                    (true,  "enrolldate") => ordered.ThenByDescending(e => e.EnrollDate),
                     (false, "status") => ordered.ThenBy(e => e.Status),
-                    (true, "status") => ordered.ThenByDescending(e => e.Status),
+                    (true,  "status") => ordered.ThenByDescending(e => e.Status),
                     _ => ordered.ThenBy(e => e.EnrollmentId)
                 };
             }

@@ -191,8 +191,10 @@ public class CourseService : ICourseService
             Student = includeStudent && e.Student != null ? new StudentSummaryModel
             {
                 StudentId = e.Student.StudentId,
+                StudentCode = e.Student.StudentCode,
                 FullName = e.Student.FullName,
-                Email = e.Student.Email
+                Email = e.Student.Email,
+                Phone = e.Student.Phone
             } : null,
             Course = includeCourse && e.Course != null ? new CourseSummaryModel
             {
@@ -277,6 +279,7 @@ public class CourseService : ICourseService
         var items = students.Select(s => new StudentModel
         {
             StudentId = s.StudentId,
+            StudentCode = s.StudentCode,
             FullName = s.FullName,
             Email = s.Email,
             DateOfBirth = s.DateOfBirth,

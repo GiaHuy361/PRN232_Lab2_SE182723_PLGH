@@ -51,6 +51,7 @@ CREATE TABLE Subject (
 
 CREATE TABLE Student (
     StudentId   INT PRIMARY KEY IDENTITY(1,1),
+    StudentCode VARCHAR(8) NOT NULL UNIQUE,
     FullName    NVARCHAR(100) NOT NULL,
     Email       VARCHAR(100) NOT NULL,
     DateOfBirth DATETIME NOT NULL,
@@ -135,19 +136,60 @@ INSERT INTO Course (CourseName, SemesterId) VALUES
 GO
 
 -- ============================================================
--- SEED: Students (50)
+-- SEED: Students (50) with unique StudentCode (2 letters + 6 digits)
+-- Format: SE18xxxx — valid FPTU-style codes, all uppercase, all unique.
 -- ============================================================
-DECLARE @i INT = 1;
-WHILE @i <= 50
-BEGIN
-    INSERT INTO Student (FullName, Email, DateOfBirth)
-    VALUES (
-        CONCAT(N'Nguyen Van Student ', @i),
-        CONCAT('student', @i, '@lms.edu.vn'),
-        DATEADD(YEAR, -18 - (@i % 5), DATEADD(DAY, @i * 7, '2000-01-01'))
-    );
-    SET @i = @i + 1;
-END
+INSERT INTO Student (StudentCode, FullName, Email, DateOfBirth, Phone) VALUES
+('SE180001', N'Nguyen Van Student 1',  'student1@fpt.edu.vn',  '2001-01-08', NULL),
+('SE180002', N'Nguyen Van Student 2',  'student2@fpt.edu.vn',  '2001-03-15', NULL),
+('SE180003', N'Nguyen Van Student 3',  'student3@fpt.edu.vn',  '2000-11-22', NULL),
+('SE180004', N'Nguyen Van Student 4',  'student4@fpt.edu.vn',  '2002-06-01', NULL),
+('SE180005', N'Nguyen Van Student 5',  'student5@fpt.edu.vn',  '2001-09-10', NULL),
+('SE180006', N'Nguyen Van Student 6',  'student6@fpt.edu.vn',  '2000-04-18', NULL),
+('SE180007', N'Nguyen Van Student 7',  'student7@fpt.edu.vn',  '2001-12-25', NULL),
+('SE180008', N'Nguyen Van Student 8',  'student8@fpt.edu.vn',  '2002-02-14', NULL),
+('SE180009', N'Nguyen Van Student 9',  'student9@fpt.edu.vn',  '2000-07-30', NULL),
+('SE180010', N'Nguyen Van Student 10', 'student10@fpt.edu.vn', '2001-05-05', NULL),
+('SE180011', N'Nguyen Van Student 11', 'student11@fpt.edu.vn', '2001-01-11', NULL),
+('SE180012', N'Nguyen Van Student 12', 'student12@fpt.edu.vn', '2000-08-20', NULL),
+('SE180013', N'Nguyen Van Student 13', 'student13@fpt.edu.vn', '2002-03-03', NULL),
+('SE180014', N'Nguyen Van Student 14', 'student14@fpt.edu.vn', '2001-10-17', NULL),
+('SE180015', N'Nguyen Van Student 15', 'student15@fpt.edu.vn', '2000-12-12', NULL),
+('SE180016', N'Nguyen Van Student 16', 'student16@fpt.edu.vn', '2002-07-07', NULL),
+('SE180017', N'Nguyen Van Student 17', 'student17@fpt.edu.vn', '2001-04-24', NULL),
+('SE180018', N'Nguyen Van Student 18', 'student18@fpt.edu.vn', '2000-09-09', NULL),
+('SE180019', N'Nguyen Van Student 19', 'student19@fpt.edu.vn', '2002-01-28', NULL),
+('SE180020', N'Nguyen Van Student 20', 'student20@fpt.edu.vn', '2001-06-16', NULL),
+('HE180021', N'Nguyen Van Student 21', 'student21@fpt.edu.vn', '2000-11-03', NULL),
+('HE180022', N'Nguyen Van Student 22', 'student22@fpt.edu.vn', '2002-04-11', NULL),
+('HE180023', N'Nguyen Van Student 23', 'student23@fpt.edu.vn', '2001-07-19', NULL),
+('HE180024', N'Nguyen Van Student 24', 'student24@fpt.edu.vn', '2000-02-26', NULL),
+('HE180025', N'Nguyen Van Student 25', 'student25@fpt.edu.vn', '2002-09-04', NULL),
+('HE180026', N'Nguyen Van Student 26', 'student26@fpt.edu.vn', '2001-03-12', NULL),
+('HE180027', N'Nguyen Van Student 27', 'student27@fpt.edu.vn', '2000-06-20', NULL),
+('HE180028', N'Nguyen Van Student 28', 'student28@fpt.edu.vn', '2002-11-27', NULL),
+('HE180029', N'Nguyen Van Student 29', 'student29@fpt.edu.vn', '2001-08-05', NULL),
+('HE180030', N'Nguyen Van Student 30', 'student30@fpt.edu.vn', '2000-01-13', NULL),
+('CE180031', N'Nguyen Van Student 31', 'student31@fpt.edu.vn', '2002-06-21', NULL),
+('CE180032', N'Nguyen Van Student 32', 'student32@fpt.edu.vn', '2001-09-28', NULL),
+('CE180033', N'Nguyen Van Student 33', 'student33@fpt.edu.vn', '2000-04-06', NULL),
+('CE180034', N'Nguyen Van Student 34', 'student34@fpt.edu.vn', '2002-12-14', NULL),
+('CE180035', N'Nguyen Van Student 35', 'student35@fpt.edu.vn', '2001-05-22', NULL),
+('CE180036', N'Nguyen Van Student 36', 'student36@fpt.edu.vn', '2000-10-29', NULL),
+('CE180037', N'Nguyen Van Student 37', 'student37@fpt.edu.vn', '2002-02-07', NULL),
+('CE180038', N'Nguyen Van Student 38', 'student38@fpt.edu.vn', '2001-07-15', NULL),
+('CE180039', N'Nguyen Van Student 39', 'student39@fpt.edu.vn', '2000-12-23', NULL),
+('CE180040', N'Nguyen Van Student 40', 'student40@fpt.edu.vn', '2002-05-01', NULL),
+('DE180041', N'Nguyen Van Student 41', 'student41@fpt.edu.vn', '2001-02-09', NULL),
+('DE180042', N'Nguyen Van Student 42', 'student42@fpt.edu.vn', '2000-07-17', NULL),
+('DE180043', N'Nguyen Van Student 43', 'student43@fpt.edu.vn', '2002-10-24', NULL),
+('DE180044', N'Nguyen Van Student 44', 'student44@fpt.edu.vn', '2001-04-03', NULL),
+('DE180045', N'Nguyen Van Student 45', 'student45@fpt.edu.vn', '2000-09-11', NULL),
+('DE180046', N'Nguyen Van Student 46', 'student46@fpt.edu.vn', '2002-01-18', NULL),
+('DE180047', N'Nguyen Van Student 47', 'student47@fpt.edu.vn', '2001-06-26', NULL),
+('DE180048', N'Nguyen Van Student 48', 'student48@fpt.edu.vn', '2000-03-05', NULL),
+('DE180049', N'Nguyen Van Student 49', 'student49@fpt.edu.vn', '2002-08-13', NULL),
+('DE180050', N'Nguyen Van Student 50', 'student50@fpt.edu.vn', '2001-11-21', NULL);
 GO
 
 -- ============================================================

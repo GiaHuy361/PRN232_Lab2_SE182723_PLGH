@@ -33,7 +33,7 @@ public class EnrollmentsController : ControllerBase
         var (items, total) = await _service.GetAllAsync(query);
         var responses = items.Select(MapToResponse).ToList();
 
-        IEnumerable<object> finalItems = query.FieldList.Count > 0
+        List<object> finalItems = query.FieldList.Count > 0
             ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
             : responses.Cast<object>().ToList();
 
@@ -143,6 +143,7 @@ public class EnrollmentsController : ControllerBase
         Student = m.Student == null ? null : new StudentSummaryResponse
         {
             StudentId = m.Student.StudentId,
+            StudentCode = m.Student.StudentCode,
             FullName = m.Student.FullName,
             Email = m.Student.Email
         },
@@ -161,6 +162,7 @@ public class EnrollmentsController : ControllerBase
         Student = m.Student == null ? null : new StudentSummaryResponse
         {
             StudentId = m.Student.StudentId,
+            StudentCode = m.Student.StudentCode,
             FullName = m.Student.FullName,
             Email = m.Student.Email
         },

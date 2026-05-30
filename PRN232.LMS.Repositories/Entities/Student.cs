@@ -7,6 +7,8 @@ public partial class Student
 {
     public int StudentId { get; set; }
 
+    public string StudentCode { get; set; } = string.Empty;
+
     public string FullName { get; set; } = null!;
 
     public string Email { get; set; } = null!;

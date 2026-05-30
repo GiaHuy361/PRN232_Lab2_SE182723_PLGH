@@ -33,7 +33,7 @@ public class CoursesController : ControllerBase
         var (items, total) = await _service.GetAllAsync(query);
         var responses = items.Select(MapToResponse).ToList();
 
-        IEnumerable<object> finalItems = query.FieldList.Count > 0
+        List<object> finalItems = query.FieldList.Count > 0
             ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
             : responses.Cast<object>().ToList();
 
@@ -72,6 +72,7 @@ public class CoursesController : ControllerBase
             Student = e.Student == null ? null : new StudentSummaryResponse
             {
                 StudentId = e.Student.StudentId,
+                StudentCode = e.Student.StudentCode,
                 FullName = e.Student.FullName,
                 Email = e.Student.Email
             },
@@ -82,7 +83,7 @@ public class CoursesController : ControllerBase
             }
         }).ToList();
 
-        IEnumerable<object> finalItems = query.FieldList.Count > 0
+        List<object> finalItems = query.FieldList.Count > 0
             ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
             : responses.Cast<object>().ToList();
 
@@ -225,7 +226,7 @@ public class CoursesController : ControllerBase
 
         var responses = result.Value.Items.Select(MapToStudentResponse).ToList();
 
-        IEnumerable<object> finalItems = query.FieldList.Count > 0
+        List<object> finalItems = query.FieldList.Count > 0
             ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
             : responses.Cast<object>().ToList();
 
@@ -247,6 +248,7 @@ public class CoursesController : ControllerBase
     private static StudentResponse MapToStudentResponse(StudentModel m) => new()
     {
         StudentId = m.StudentId,
+        StudentCode = m.StudentCode,
         FullName = m.FullName,
         Email = m.Email,
         DateOfBirth = m.DateOfBirth,

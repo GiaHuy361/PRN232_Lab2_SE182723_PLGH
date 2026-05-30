@@ -33,7 +33,7 @@ public class SubjectsController : ControllerBase
         var (items, total) = await _service.GetAllAsync(query);
         var responses = items.Select(MapToResponse).ToList();
 
-        IEnumerable<object> finalItems = query.FieldList.Count > 0
+        List<object> finalItems = query.FieldList.Count > 0
             ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
             : responses.Cast<object>().ToList();
 

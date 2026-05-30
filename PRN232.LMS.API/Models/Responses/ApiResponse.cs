@@ -24,6 +24,6 @@ public class PaginationMetadata
 
 public class PagedResponse<T>
 {
-    public IEnumerable<T> Items { get; set; } = Enumerable.Empty<T>();
+    public List<T> Items { get; set; } = new();
     public PaginationMetadata Pagination { get; set; } = new();
 }

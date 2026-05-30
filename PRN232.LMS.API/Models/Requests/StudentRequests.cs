@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using PRN232.LMS.API.Infrastructure;
 
@@ -6,6 +5,10 @@ namespace PRN232.LMS.API.Models.Requests;
 
 public class CreateStudentRequest
 {
+    [Required(ErrorMessage = "StudentCode is required.")]
+    [FptStudentCode(ErrorMessage = "Student code must contain 2 letters followed by 6 digits.")]
+    public string StudentCode { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "FullName is required.")]
     [StringLength(100, MinimumLength = 2, ErrorMessage = "FullName must be between 2 and 100 characters.")]
     public string FullName { get; set; } = string.Empty;
@@ -26,6 +29,10 @@ public class CreateStudentRequest
 
 public class UpdateStudentRequest
 {
+    [Required(ErrorMessage = "StudentCode is required.")]
+    [FptStudentCode(ErrorMessage = "Student code must contain 2 letters followed by 6 digits.")]
+    public string StudentCode { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "FullName is required.")]
     [StringLength(100, MinimumLength = 2, ErrorMessage = "FullName must be between 2 and 100 characters.")]
     public string FullName { get; set; } = string.Empty;

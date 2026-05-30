@@ -23,6 +23,11 @@ public class StudentRepository : IStudentRepository
                 .ThenInclude(e => e.Course)
             .FirstOrDefaultAsync(s => s.StudentId == id);
 
+    public async Task<bool> IsStudentCodeTakenAsync(string studentCode, int? excludeStudentId = null)
+        => await _context.Students.AnyAsync(s =>
+            s.StudentCode == studentCode &&
+            (excludeStudentId == null || s.StudentId != excludeStudentId.Value));
+
     public async Task AddAsync(Student entity)
         => await _context.Students.AddAsync(entity);
 

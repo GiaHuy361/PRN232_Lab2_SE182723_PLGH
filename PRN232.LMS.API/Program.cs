@@ -129,12 +129,20 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "PRN232.LMS.API - v1", Version = "v1" });
     c.SwaggerDoc("v2", new() { Title = "PRN232.LMS.API - v2", Version = "v2" });
 
-    // DocInclusionPredicate checks if the endpoint matches docName (v1 or v2).
-    // Versioned actions appear in their matching version document.
-    // Legacy (non-versioned / neutral) actions appear in both v1 and v2 documents to ensure they are always testable!
+    // DocInclusionPredicate:
+    // - Versioned actions (V1/V2) appear only in their matching version document.
+    // - Legacy / ApiVersionNeutral actions appear only in v1 to avoid duplicate operation conflicts.
+    //   ApiVersionNeutral controllers are duplicated by Asp.Versioning (one per version group);
+    //   we restrict them to v1 and rely on ResolveConflictingActions as a safety net.
     c.DocInclusionPredicate((docName, apiDesc) =>
     {
         var metadata = apiDesc.ActionDescriptor.EndpointMetadata;
+
+        // Check for explicit ApiVersionNeutral marker
+        var isNeutral = metadata.OfType<Asp.Versioning.ApiVersionNeutralAttribute>().Any();
+        if (isNeutral)
+            return docName == "v1";
+
         var apiVersions = metadata.OfType<Asp.Versioning.ApiVersionAttribute>()
                                   .SelectMany(attr => attr.Versions)
                                   .ToList();
@@ -144,9 +152,12 @@ builder.Services.AddSwaggerGen(c =>
             return apiVersions.Any(v => $"v{v.MajorVersion}" == docName);
         }
 
-        // Include all non-versioned/neutral legacy actions in both docs
-        return true;
+        // No explicit version — treat as neutral, show only in v1
+        return docName == "v1";
     });
+
+    // Safety net: if duplicates still slip through, keep only the first one
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
 
     c.OperationFilter<HideJsonIgnoreParameterFilter>(); // hides ExpandList / FieldList
     c.OperationFilter<QueryParameterDescriptionFilter>(); // lowercases and adds rich descriptions to query parameters
@@ -189,17 +200,25 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "PRN232.LMS.API v1");
     c.SwaggerEndpoint("/swagger/v2/swagger.json", "PRN232.LMS.API v2");
     c.RoutePrefix = "swagger";
+    c.EnablePersistAuthorization();
 });
 
 // Redirect root "/" → Swagger UI
 app.MapGet("/", () => Results.Redirect("/swagger"))
    .ExcludeFromDescription();
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<LmsDbContext>();
+    context.Database.EnsureCreated();
+    DbSeeder.Seed(context);
+}
 
 app.Run();

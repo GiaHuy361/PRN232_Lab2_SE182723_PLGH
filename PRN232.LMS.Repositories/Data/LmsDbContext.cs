@@ -81,6 +81,14 @@ public partial class LmsDbContext : DbContext
 
             entity.ToTable("Student");
 
+            entity.HasIndex(e => e.StudentCode)
+                .IsUnique()
+                .HasDatabaseName("UQ_Student_StudentCode");
+
+            entity.Property(e => e.StudentCode)
+                .IsRequired()
+                .HasMaxLength(8)
+                .IsUnicode(false);
             entity.Property(e => e.DateOfBirth).HasColumnType("datetime");
             entity.Property(e => e.Email)
                 .HasMaxLength(100)

@@ -37,7 +37,7 @@ public class StudentsV1Controller : ControllerBase
         var responses = items.Select(MapToV1Response).ToList();
 
         // FieldSelectionHelper will naturally ignore "phone" since StudentV1Response does not contain it.
-        IEnumerable<object> finalItems = query.FieldList.Count > 0
+        List<object> finalItems = query.FieldList.Count > 0
             ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
             : responses.Cast<object>().ToList();
 
@@ -55,7 +55,7 @@ public class StudentsV1Controller : ControllerBase
         return Ok(ApiResponse<PagedResponse<object>>.SuccessResponse(paged));
     }
 
-    [HttpGet("{id:int:min(1)}")]
+    [HttpGet("{id:int:min(1)}", Name = "GetStudentV1ById")]
     [ProducesResponseType(typeof(ApiResponse<StudentV1DetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

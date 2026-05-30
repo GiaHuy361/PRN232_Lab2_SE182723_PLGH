@@ -6,10 +6,6 @@ using PRN232.LMS.API.Models.Responses;
 using PRN232.LMS.Services.Common;
 using PRN232.LMS.Services.Interfaces;
 using PRN232.LMS.Services.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace PRN232.LMS.API.Controllers.V2;
 
@@ -36,7 +32,7 @@ public class StudentsV2Controller : ControllerBase
         var (items, total) = await _service.GetAllAsync(query);
         var responses = items.Select(MapToV2Response).ToList();
 
-        IEnumerable<object> finalItems = query.FieldList.Count > 0
+        List<object> finalItems = query.FieldList.Count > 0
             ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
             : responses.Cast<object>().ToList();
 
@@ -54,7 +50,7 @@ public class StudentsV2Controller : ControllerBase
         return Ok(ApiResponse<PagedResponse<object>>.SuccessResponse(paged));
     }
 
-    [HttpGet("{id:int:min(1)}")]
+    [HttpGet("{id:int:min(1)}", Name = "GetStudentV2ById")]
     [ProducesResponseType(typeof(ApiResponse<StudentV2DetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -71,6 +67,7 @@ public class StudentsV2Controller : ControllerBase
     private static StudentV2Response MapToV2Response(StudentModel m) => new()
     {
         StudentId = m.StudentId,
+        StudentCode = m.StudentCode,
         FullName = m.FullName,
         Email = m.Email,
         DateOfBirth = m.DateOfBirth,
@@ -88,6 +85,7 @@ public class StudentsV2Controller : ControllerBase
     private static StudentV2DetailResponse MapToV2DetailResponse(StudentDetailModel m) => new()
     {
         StudentId = m.StudentId,
+        StudentCode = m.StudentCode,
         FullName = m.FullName,
         Email = m.Email,
         DateOfBirth = m.DateOfBirth,

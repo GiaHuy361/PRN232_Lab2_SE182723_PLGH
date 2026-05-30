@@ -33,7 +33,7 @@ public class StudentsController : ControllerBase
         var (items, total) = await _service.GetAllAsync(query);
         var responses = items.Select(MapToResponse).ToList();
 
-        IEnumerable<object> finalItems = query.FieldList.Count > 0
+        List<object> finalItems = query.FieldList.Count > 0
             ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
             : responses.Cast<object>().ToList();
 
@@ -72,6 +72,7 @@ public class StudentsController : ControllerBase
             Student = e.Student == null ? null : new StudentSummaryResponse
             {
                 StudentId = e.Student.StudentId,
+                StudentCode = e.Student.StudentCode,
                 FullName = e.Student.FullName,
                 Email = e.Student.Email
             },
@@ -82,7 +83,7 @@ public class StudentsController : ControllerBase
             }
         }).ToList();
 
-        IEnumerable<object> finalItems = query.FieldList.Count > 0
+        List<object> finalItems = query.FieldList.Count > 0
             ? responses.Select(r => FieldSelectionHelper.SelectFields(r, query.FieldList)).ToList()
             : responses.Cast<object>().ToList();
 
@@ -100,7 +101,7 @@ public class StudentsController : ControllerBase
         return Ok(ApiResponse<PagedResponse<object>>.SuccessResponse(paged));
     }
 
-    [HttpGet("{id:int:min(1)}")]
+    [HttpGet("{id:int:min(1)}", Name = "GetStudentById")]
     [ProducesResponseType(typeof(ApiResponse<StudentDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -125,6 +126,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Create([FromBody] CreateStudentRequest request)
     {
@@ -133,14 +135,18 @@ public class StudentsController : ControllerBase
 
         var model = new StudentModel
         {
+            StudentCode = request.StudentCode,
             FullName = request.FullName,
             Email = request.Email,
             DateOfBirth = request.DateOfBirth,
             Phone = request.Phone
         };
-        var id = await _service.CreateAsync(model);
+        var (id, isDuplicateCode) = await _service.CreateAsync(model);
+        if (isDuplicateCode)
+            return Conflict(ApiResponse<object>.ErrorResponse($"Student code '{request.StudentCode.Trim().ToUpperInvariant()}' is already taken."));
+
         var created = await _service.GetByIdAsync(id);
-        return CreatedAtAction(nameof(GetById), new { id },
+        return CreatedAtRoute("GetStudentById", new { id },
             ApiResponse<StudentDetailResponse>.SuccessResponse(MapToDetailResponse(created!), "Student created successfully"));
     }
 
@@ -151,6 +157,7 @@ public class StudentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStudentRequest request)
     {
@@ -159,14 +166,17 @@ public class StudentsController : ControllerBase
 
         var model = new StudentModel
         {
+            StudentCode = request.StudentCode,
             FullName = request.FullName,
             Email = request.Email,
             DateOfBirth = request.DateOfBirth,
             Phone = request.Phone
         };
-        var result = await _service.UpdateAsync(id, model);
-        if (!result)
+        var (found, isDuplicateCode) = await _service.UpdateAsync(id, model);
+        if (!found)
             return NotFound(ApiResponse<object>.ErrorResponse("Student not found"));
+        if (isDuplicateCode)
+            return Conflict(ApiResponse<object>.ErrorResponse($"Student code '{request.StudentCode.Trim().ToUpperInvariant()}' is already taken."));
 
         return Ok(ApiResponse<object>.SuccessResponse(null!, "Student updated successfully"));
     }
@@ -190,6 +200,7 @@ public class StudentsController : ControllerBase
     private static StudentResponse MapToResponse(StudentModel m) => new()
     {
         StudentId = m.StudentId,
+        StudentCode = m.StudentCode,
         FullName = m.FullName,
         Email = m.Email,
         DateOfBirth = m.DateOfBirth,
@@ -207,6 +218,7 @@ public class StudentsController : ControllerBase
     private static StudentDetailResponse MapToDetailResponse(StudentDetailModel m) => new()
     {
         StudentId = m.StudentId,
+        StudentCode = m.StudentCode,
         FullName = m.FullName,
         Email = m.Email,
         DateOfBirth = m.DateOfBirth,

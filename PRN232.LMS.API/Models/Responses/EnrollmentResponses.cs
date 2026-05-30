@@ -20,13 +20,6 @@ public class EnrollmentDetailResponse
     public CourseSummaryResponse? Course { get; set; }
 }
 
-public class StudentSummaryResponse
-{
-    public int StudentId { get; set; }
-    public string FullName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-}
-
 public class CourseSummaryResponse
 {
     public int CourseId { get; set; }
