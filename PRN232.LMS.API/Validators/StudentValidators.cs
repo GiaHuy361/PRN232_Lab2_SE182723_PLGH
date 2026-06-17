@@ -10,8 +10,7 @@ public class CreateStudentRequestValidator : AbstractValidator<CreateStudentRequ
         RuleFor(x => x.FullName)
             .NotEmpty().WithMessage("FullName is required.")
             .MinimumLength(2).WithMessage("FullName must be at least 2 characters.")
-            .MaximumLength(100).WithMessage("FullName must not exceed 100 characters.")
-            .Matches(@"^[\p{L}\s]+$").WithMessage("FullName must contain only letters and spaces.");
+            .MaximumLength(100).WithMessage("FullName must not exceed 100 characters.");
 
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("Email is required.")
@@ -24,7 +23,6 @@ public class CreateStudentRequestValidator : AbstractValidator<CreateStudentRequ
 
         RuleFor(x => x.Phone)
             .MaximumLength(20).WithMessage("Phone number must not exceed 20 characters.")
-            .Matches(@"^\+?[0-9\s\-\(\)]+$").WithMessage("Invalid phone number format.")
             .When(x => !string.IsNullOrWhiteSpace(x.Phone));
     }
 }
@@ -36,8 +34,7 @@ public class UpdateStudentRequestValidator : AbstractValidator<UpdateStudentRequ
         RuleFor(x => x.FullName)
             .NotEmpty().WithMessage("FullName is required.")
             .MinimumLength(2).WithMessage("FullName must be at least 2 characters.")
-            .MaximumLength(100).WithMessage("FullName must not exceed 100 characters.")
-            .Matches(@"^[\p{L}\s]+$").WithMessage("FullName must contain only letters and spaces.");
+            .MaximumLength(100).WithMessage("FullName must not exceed 100 characters.");
 
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("Email is required.")
@@ -50,7 +47,6 @@ public class UpdateStudentRequestValidator : AbstractValidator<UpdateStudentRequ
 
         RuleFor(x => x.Phone)
             .MaximumLength(20).WithMessage("Phone number must not exceed 20 characters.")
-            .Matches(@"^\+?[0-9\s\-\(\)]+$").WithMessage("Invalid phone number format.")
             .When(x => !string.IsNullOrWhiteSpace(x.Phone));
     }
 }
