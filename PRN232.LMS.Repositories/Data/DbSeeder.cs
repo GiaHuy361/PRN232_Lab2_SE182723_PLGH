@@ -77,8 +77,8 @@ public static class DbSeeder
         // 4. Seed Users
         var users = new List<User>
         {
-            new() { Username = "admin", PasswordHash = "$2a$11$KOrKPxHkCwrGVF/U4RqBeeoBAahmIFVFvVGa1RpSx1szrK2iX2dLi", Role = "Admin" },
-            new() { Username = "student", PasswordHash = "$2a$11$E/rdbALLsHRU0QFb569DyeQm6UPeezJuRgq7mkRtf9uclLGufiQSm", Role = "Student" }
+            new() { Username = "admin", PasswordHash = "$2a$11$P/c1W2eHPiyDQg.01azxP.QcR7j9uJEgPvW2JTDQNwaGQRQ.A30qW", Role = "Admin" },
+            new() { Username = "student", PasswordHash = "$2a$11$bVRnxvDnioYVorF1BG5AyOxqIQGvO3ZTzhSRFNZoN1Tm0aNGyWBfS", Role = "Student" }
         };
         context.Users.AddRange(users);
         context.SaveChanges();
