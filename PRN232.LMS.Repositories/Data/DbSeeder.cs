@@ -94,10 +94,10 @@ public static class DbSeeder
         for (int i = 1; i <= 50; i++)
         {
             string code;
-            if (i <= 20) code = $"SE18{i:D4}";
-            else if (i <= 30) code = $"HE18{i:D4}";
-            else if (i <= 40) code = $"CE{180000 + i}";
-            else code = $"DE{180000 + i}";
+            if (i <= 20) code = $"SE{18000 + i:D5}";
+            else if (i <= 30) code = $"HE{18000 + i:D5}";
+            else if (i <= 40) code = $"CE{18000 + i:D5}";
+            else code = $"DE{18000 + i:D5}";
 
             students.Add(new Student
             {

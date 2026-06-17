@@ -6,7 +6,7 @@ namespace PRN232.LMS.API.Models.Requests;
 public class CreateStudentRequest
 {
     [Required(ErrorMessage = "StudentCode is required.")]
-    [FptStudentCode(ErrorMessage = "Student code must contain 2 letters followed by 6 digits.")]
+    [FptStudentCode(ErrorMessage = "Student code must contain 2 letters followed by 5 digits (e.g. SE19886).")]
     public string StudentCode { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "FullName is required.")]
@@ -30,7 +30,7 @@ public class CreateStudentRequest
 public class UpdateStudentRequest
 {
     [Required(ErrorMessage = "StudentCode is required.")]
-    [FptStudentCode(ErrorMessage = "Student code must contain 2 letters followed by 6 digits.")]
+    [FptStudentCode(ErrorMessage = "Student code must contain 2 letters followed by 5 digits (e.g. SE19886).")]
     public string StudentCode { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "FullName is required.")]
